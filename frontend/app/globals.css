@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans-display: 'General Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --bg-void: #0B0D10;
+  --bg-panel: #14171C;
+  --bg-panel-raised: #1B1F26;
+  --border-hairline: #262B33;
+  --text-primary: #E8EAED;
+  --text-muted: #8B93A1;
+  --accent-scan: #5EC8FF;
+  --signal-critical: #FF5468;
+  --signal-high: #FF9F43;
+  --signal-medium: #FFD166;
+  --signal-low: #6C9EFF;
+  --signal-resolved: #3DDC97;
+}
+
+* {
+  box-sizing: border-box;
+  border-color: #262B33;
+}
+
+html,
+body {
+  background-color: #0B0D10;
+  background-image: 
+    radial-gradient(rgba(94, 200, 255, 0.04) 1px, transparent 0),
+    linear-gradient(to right, rgba(38, 43, 51, 0.2) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(38, 43, 51, 0.2) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-position: 0 0, 0 0, 0 0;
+  color: #E8EAED;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-sans-display);
+  letter-spacing: -0.02em;
+}
+
+/* Custom hairline scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0B0D10;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #262B33;
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #8B93A1;
+}
+
+/* Clinical grid hairline utility */
+.hairline-grid {
+  background-size: 24px 24px;
+  background-image: 
+    linear-gradient(to right, rgba(38, 43, 51, 0.35) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(38, 43, 51, 0.35) 1px, transparent 1px);
+}
+
+/* Prevent FOUC (Flash of Unanimated Content) before GSAP mounts */
+.hero-bg-anim,
+.hero-header-anim,
+.hero-badge-anim,
+.hero-title-anim,
+.hero-subhead-anim,
+.hero-cta-anim,
+.hero-card-anim,
+.hero-metric-anim,
+.reveal-on-scroll {
+  visibility: hidden;
+}
+
+/* Subtle pulsating diagnostic glow for hero demo module */
+@keyframes demoGlowPulse {
+  0%, 100% {
+    opacity: 0.22;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 0.52;
+    transform: scale(1.02);
+  }
+}
+
+.animate-glow-pulse {
+  animation: demoGlowPulse 5s ease-in-out infinite;
+}
+

@@ -1,0 +1,50 @@
+# Root Monorepo Git Ignore
+
+# Dependencies
+node_modules/
+**/node_modules/
+.pnpm-store/
+
+# Next.js Build Outputs
+.next/
+**/ .next/
+out/
+**/out/
+build/
+**/build/
+dist/
+**/dist/
+
+# SQLite & Local Database Files
+*.db
+*.db-journal
+*.sqlite
+dev.db
+
+# Environment & Secret Files
+.env
+.env.*
+!.env.example
+
+# Foundry & Smart Contract Compilations
+contracts/out/
+contracts/cache/
+contracts/lib/
+out/
+cache/
+
+# AWS S3 / Artifact Temporary Files
+*.zip
+*.tar.gz
+*.pdf
+
+# Testing & Log Files
+coverage/
+*.log
+npm-debug.log*
+
+# System & IDE Artifacts
+.DS_Store
+.vscode/
+.idea/
+.gemini/

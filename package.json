@@ -1,0 +1,13 @@
+{
+  "name": "zyron-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Zyron — Smart Contract Security & Audit Platform",
+  "scripts": {
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "npm --prefix backend run start:dev",
+    "test:backend": "npm --prefix backend run test",
+    "build:backend": "npm --prefix backend run build",
+    "build:frontend": "npm --prefix frontend run build"
+  }
+}

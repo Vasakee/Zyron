@@ -1,0 +1,14 @@
+import { MigrationInterface, QueryRunner } from "typeorm";
+
+export class Migration1739463592583 implements MigrationInterface {
+    name = 'Migration1739463592583'
+
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`ALTER TABLE "generated-kits" ADD "barCode" text`);
+    }
+
+    public async down(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`ALTER TABLE "generated-kits" DROP COLUMN "barCode"`);
+    }
+
+}
