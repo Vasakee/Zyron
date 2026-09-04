@@ -15,6 +15,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 import { AuthProvider } from "@/lib/auth-context";
+import { Toaster } from "sonner";
+import { Web3ErrorHandler } from "@/components/web3-error-handler";
 
 export const metadata: Metadata = {
   title: "Zyron — Smart Contract Security & Auditing",
@@ -35,7 +37,9 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-bg-void text-text-primary font-sans antialiased min-h-screen selection:bg-accent-scan/20 selection:text-accent-scan">
+        <Web3ErrorHandler />
         <AuthProvider>{children}</AuthProvider>
+        <Toaster position="top-right" theme="dark" richColors />
       </body>
     </html>
   );

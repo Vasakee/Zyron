@@ -8,21 +8,37 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Eyebrow } from "@/components/ui/eyebrow";
 
+import { useAuth } from "@/lib/auth-context";
+import { toast } from "sonner";
+
 export default function RegisterPage() {
   const router = useRouter();
+  const { register } = useAuth();
   const [protocolName, setProtocolName] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [daoTier, setDaoTier] = React.useState("growth");
   const [isLoading, setIsLoading] = React.useState(false);
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      await register({
+        email,
+        password,
+        name: protocolName,
+        organizationName: protocolName,
+      });
+      toast.success("Protocol Workspace registered successfully!");
       router.push("/portal/new-request");
-    }, 1200);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || "Registration failed";
+      const displayMsg = Array.isArray(msg) ? msg.join(", ") : msg;
+      toast.error(`Registration Failed: ${displayMsg}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

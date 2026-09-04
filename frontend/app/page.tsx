@@ -49,6 +49,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ExpandingButton } from "@/components/ui/expanding-button";
 import { ChainLogo } from "@/components/ui/chain-logos";
+import { useAuth } from "@/lib/auth-context";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
@@ -103,6 +106,8 @@ const row3Chains = [
 ];
 
 export default function LandingPage() {
+  const { user } = useAuth();
+  const router = useRouter();
   const [activeTab, setActiveTab] = React.useState<"all" | "in_progress" | "completed" | "failed" | "drafts">("all");
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [expandedFaq, setExpandedFaq] = React.useState<number | null>(0);
@@ -110,6 +115,24 @@ export default function LandingPage() {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const demoRef = React.useRef<HTMLDivElement>(null);
   const [demoScale, setDemoScale] = React.useState(1);
+
+  const handleRequestAudit = () => {
+    if (!user) {
+      toast.error("Authentication Required: Please sign in or register to submit an audit request.");
+      router.push("/auth/login");
+    } else {
+      router.push("/portal/new-request");
+    }
+  };
+
+  const handleScanToken = () => {
+    if (!user) {
+      toast.error("Authentication Required: Please sign in to access the Token Risk & AI Audit Analyzer.");
+      router.push("/auth/login");
+    } else {
+      router.push("/portal/token-risk");
+    }
+  };
 
   React.useEffect(() => {
     const handleResize = () => {
@@ -367,13 +390,13 @@ export default function LandingPage() {
               <Globe className="h-4 w-4" />
             </button>
 
-            {/* Login ↗ Button */}
-            <Link href="/auth/login">
+            {/* Login / Dashboard ↗ Button */}
+            <Link href={user ? "/portal" : "/auth/login"}>
               <button
                 type="button"
                 className="h-9 px-3.5 sm:px-4 rounded-[4px] bg-text-primary text-bg-void font-bold text-xs hover:bg-white transition-colors flex items-center gap-1.5 shadow-sm font-mono"
               >
-                <span>Login</span>
+                <span>{user ? "Dashboard" : "Login"}</span>
                 <ArrowUpRight className="h-3.5 w-3.5 stroke-[2.5]" />
               </button>
             </Link>
@@ -502,7 +525,7 @@ export default function LandingPage() {
           <div className="pt-2 space-y-3">
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 w-full max-w-sm sm:max-w-none mx-auto">
               {/* Button 1: Request an Audit */}
-              <Link href="/portal/new-request" className="hero-cta-anim w-full sm:w-auto">
+              <div onClick={handleRequestAudit} className="hero-cta-anim w-full sm:w-auto cursor-pointer">
                 <ExpandingButton
                   variant="light"
                   size="md"
@@ -511,10 +534,10 @@ export default function LandingPage() {
                 >
                   Request an Audit
                 </ExpandingButton>
-              </Link>
+              </div>
 
               {/* Button 2: Scan Token Security */}
-              <Link href="/portal/new-request" className="hero-cta-anim w-full sm:w-auto">
+              <div onClick={handleScanToken} className="hero-cta-anim w-full sm:w-auto cursor-pointer">
                 <ExpandingButton
                   variant="dark"
                   size="md"
@@ -523,7 +546,7 @@ export default function LandingPage() {
                 >
                   Scan a Token Free
                 </ExpandingButton>
-              </Link>
+              </div>
             </div>
 
             <p className="hero-subhead-anim text-xs text-text-muted/70 font-mono">

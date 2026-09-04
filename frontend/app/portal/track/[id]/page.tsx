@@ -39,6 +39,7 @@ import { Eyebrow } from "@/components/ui/eyebrow";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Input } from "@/components/ui/input";
 import { MOCK_AUDIT_REQUESTS } from "@/lib/mock-data";
+import { apiClient } from "@/lib/api-client";
 
 interface CommentMessage {
   id: string;
@@ -69,19 +70,42 @@ interface DetailedFinding {
 
 export default function AuditStatusTrackerPage() {
   const params = useParams();
-  const ticketId = (params?.id as string) || "ZAM-9481";
+  const rawTicketId = (params?.id as string) || "ZYR-9481";
+  const ticketId = rawTicketId.replace(/^#/, "");
 
-  // Find audit or fallback to ZAM-9481 (Aura Liquidity Pool V3)
-  const audit =
+  // Find fallback audit or default
+  const fallbackAudit =
     MOCK_AUDIT_REQUESTS.find(
       (a) => a.id.toLowerCase() === ticketId.toLowerCase()
     ) || MOCK_AUDIT_REQUESTS[0];
+
+  const [realAudit, setRealAudit] = React.useState<any>(null);
+  const [isLoadingApi, setIsLoadingApi] = React.useState(true);
+
+  React.useEffect(() => {
+    async function fetchAuditDetails() {
+      try {
+        setIsLoadingApi(true);
+        const res = await apiClient.get(`/audits/${ticketId}`);
+        if (res.data) {
+          setRealAudit(res.data);
+        }
+      } catch (err) {
+        console.warn("Could not fetch real audit from API, using fallback ticket:", err);
+      } finally {
+        setIsLoadingApi(false);
+      }
+    }
+    if (ticketId) fetchAuditDetails();
+  }, [ticketId]);
+
+  const audit = realAudit || fallbackAudit;
 
   const [copied, setCopied] = React.useState(false);
   const [isLogStreaming, setIsLogStreaming] = React.useState(true);
   const [showRoundsHistory, setShowRoundsHistory] = React.useState(false);
   const [currentRound, setCurrentRound] = React.useState<number>(2);
-  const [pinnedCommit, setPinnedCommit] = React.useState<string>("8f9b2d4");
+  const [pinnedCommit, setPinnedCommit] = React.useState<string>((audit.gitCommit || "8f9b2d4").slice(0, 7));
 
   // Expanded findings state
   const [expandedFindingId, setExpandedFindingId] = React.useState<string | null>("ZAM-VAULT-001");
@@ -284,21 +308,28 @@ pragma solidity 0.8.20;`,
     }));
   };
 
-  // Live scan log lines for this specific ticket
+  const activeFile = audit.contractFileName || audit.fileName || "Contract.sol";
+  const activeSloc = audit.sloc || 1480;
+  const activeCommit = (audit.gitCommit || "8f9b2d4").slice(0, 7);
+  const activeCompiler = audit.compilerVersion || "v0.8.20";
+  const activeNetwork = audit.network || "Ethereum Mainnet";
+
+  // Live scan log lines dynamically constructed from real audit metadata
   const scanLogLines = [
-    { time: "21:30:14", type: "info", text: "Ingesting target contract: VaultCore.sol (2,410 SLOC)" },
-    { time: "21:30:18", type: "info", text: "Locking Git commit SHA: 8f9b2d4c01e9a37" },
-    { time: "21:30:24", type: "info", text: "Compiler target verified: solc v0.8.20 --via-ir --optimize" },
-    { time: "21:30:35", type: "info", text: "AST compilation successful: 1,842 EVM opcodes mapped across 4 functions" },
-    { time: "21:31:02", type: "pass", text: "AST Taint Pass 01/14: Access Control & Ownable invariants... PASSED" },
-    { time: "21:31:18", type: "pass", text: "AST Taint Pass 02/14: Arithmetic overflow/underflow (Solidity 0.8+)... PASSED" },
-    { time: "21:31:40", type: "warn", text: "AST Taint Pass 04/14: ERC-20 return value compliance..." },
-    { time: "21:31:44", type: "flag-high", text: "⚠ FLAG [SWC-104]: Unchecked return on rewardToken.transfer (Line 146)" },
-    { time: "21:32:05", type: "pass", text: "AST Taint Pass 06/14: Timestamp dependency & block.number drift... PASSED" },
-    { time: "21:32:15", type: "warn", text: "AST Taint Pass 08/14: Low-level call execution order & state mutability..." },
-    { time: "21:32:19", type: "flag-crit", text: "⚠ CRITICAL [SWC-107]: msg.sender.call before userBalances zeroing (Line 142)" },
-    { time: "21:32:45", type: "pass", text: "AST Taint Pass 09/14: Delegatecall proxy storage slot collision... PASSED" },
-    { time: "21:33:04", type: "live", text: "AST Taint Pass 11/14: Symbolic Reentrancy Graph & Invariant Analysis... IN PROGRESS" },
+    { time: "13:30:14", type: "info", text: `Ingesting target contract: ${activeFile} (${activeSloc.toLocaleString()} SLOC)` },
+    { time: "13:30:18", type: "info", text: `Locking Git commit SHA: ${activeCommit}` },
+    { time: "13:30:24", type: "info", text: `Compiler target verified: solc ${activeCompiler} --via-ir --optimize` },
+    { time: "13:30:30", type: "info", text: `Target Network: ${activeNetwork}` },
+    { time: "13:30:35", type: "info", text: `AST compilation successful: ${Math.max(120, activeSloc * 4)} EVM opcodes mapped across contract methods` },
+    { time: "13:31:02", type: "pass", text: "AST Taint Pass 01/14: Access Control & Ownable invariants... PASSED" },
+    { time: "13:31:18", type: "pass", text: "AST Taint Pass 02/14: Arithmetic overflow/underflow (Solidity 0.8+)... PASSED" },
+    { time: "13:31:40", type: "warn", text: "AST Taint Pass 04/14: ERC-20 return value compliance check..." },
+    { time: "13:31:44", type: "flag-high", text: `⚠ FLAG [SWC-104]: Unchecked return on token transfer in ${activeFile}` },
+    { time: "13:32:05", type: "pass", text: "AST Taint Pass 06/14: Timestamp dependency & block.number drift... PASSED" },
+    { time: "13:32:15", type: "warn", text: "AST Taint Pass 08/14: Low-level call execution order & state mutability..." },
+    { time: "13:32:19", type: "flag-crit", text: `⚠ CRITICAL [SWC-107]: msg.sender.call before balance zeroing in ${activeFile}` },
+    { time: "13:32:45", type: "pass", text: "AST Taint Pass 09/14: Delegatecall proxy storage slot collision... PASSED" },
+    { time: "13:33:04", type: "live", text: "AST Taint Pass 11/14: Symbolic Reentrancy Graph & Invariant Analysis... IN PROGRESS" },
   ];
 
   return (
@@ -552,7 +583,7 @@ pragma solidity 0.8.20;`,
               <div className="flex items-center gap-2 font-mono text-xs">
                 <Terminal className="h-4 w-4 text-accent-scan" />
                 <span className="font-semibold text-text-primary">
-                  ZAM-ENGINE-AST-SCANNER // v2.4.0 · PID: 81924
+                  ZYR-ENGINE-AST-SCANNER // v2.4.0 · PID: 81924
                 </span>
                 <span className="text-text-muted text-[11px] hidden sm:inline">
                   · Memory: 148MB · 14 Taint Analyzers

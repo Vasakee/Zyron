@@ -48,3 +48,7 @@ npm-debug.log*
 .vscode/
 .idea/
 .gemini/
+
+# Reference Codebase
+codebase/
+

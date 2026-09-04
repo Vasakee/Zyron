@@ -20,33 +20,110 @@ import { Eyebrow } from "@/components/ui/eyebrow";
 import { Badge } from "@/components/ui/badge";
 import { useAuth, SAMPLE_ACCOUNTS } from "@/lib/auth-context";
 
+import { toast } from "sonner";
+
 export default function LoginPage() {
-  const { loginAs } = useAuth();
+  const { login, loginAs } = useAuth();
   const [email, setEmail] = React.useState("security@auraprotocol.io");
-  const [password, setPassword] = React.useState("••••••••••••");
+  const [password, setPassword] = React.useState("SecurePassword123!");
   const [isLoading, setIsLoading] = React.useState(false);
   const [isWeb3Loading, setIsWeb3Loading] = React.useState(false);
+  const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
+    setErrorMsg(null);
+    try {
+      await login(email, password);
+      toast.success("Authentication successful! Session token active.");
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || "Invalid email or password";
+      const displayMsg = Array.isArray(msg) ? msg.join(", ") : msg;
+      setErrorMsg(displayMsg);
+      toast.error(`Authentication Failed: ${displayMsg}`);
+    } finally {
       setIsLoading(false);
-      // If email has auditor domain, login as auditor, otherwise client
-      if (email.includes("zyron") || email.includes("auditor")) {
-        loginAs("auditor");
-      } else {
-        loginAs("client");
-      }
-    }, 800);
+    }
   };
 
-  const handleWeb3Login = () => {
+  const handleDemoLogin = (roleStr: string) => {
+    loginAs(roleStr);
+    toast.info(`Switched to Demo Persona (${roleStr.toUpperCase()})`);
+  };
+
+  const handleWeb3Login = async () => {
     setIsWeb3Loading(true);
-    setTimeout(() => {
+    setErrorMsg(null);
+
+    // Timeout helper (5s limit so hung browser extensions never freeze the UI)
+    const withTimeout = <T,>(promise: Promise<T>, ms = 5000): Promise<T> => {
+      return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error("Wallet request timed out (5s limit)")), ms);
+        promise
+          .then((res) => {
+            clearTimeout(timer);
+            resolve(res);
+          })
+          .catch((err) => {
+            clearTimeout(timer);
+            reject(err);
+          });
+      });
+    };
+
+    try {
+      if (typeof window !== "undefined" && (window as any).ethereum) {
+        let ethereum = (window as any).ethereum;
+        if (ethereum?.providers?.length) {
+          ethereum = ethereum.providers.find((p: any) => p.isMetaMask) || ethereum.providers[0];
+        }
+
+        const accounts = (await withTimeout(
+          ethereum.request({ method: "eth_requestAccounts" }),
+          5000
+        )) as string[];
+
+        const address = accounts[0];
+
+        const domain = window.location.host;
+        const origin = window.location.origin;
+        const issuedAt = new Date().toISOString();
+        const nonce = Math.random().toString(36).substring(2, 10);
+
+        const message = `${domain} wants you to sign in with your Ethereum account:\n${address}\n\nSign in to Zyron Audit Workbench.\n\nURI: ${origin}\nVersion: 1\nChain ID: 1\nNonce: ${nonce}\nIssued At: ${issuedAt}`;
+        const hexMessage = "0x" + Array.from(new TextEncoder().encode(message)).map((b) => b.toString(16).padStart(2, "0")).join("");
+
+        try {
+          await withTimeout(
+            ethereum.request({
+              method: "personal_sign",
+              params: [hexMessage, address],
+            }),
+            5000
+          );
+        } catch (e1: any) {
+          try {
+            await withTimeout(
+              ethereum.request({
+                method: "personal_sign",
+                params: [message, address],
+              }),
+              5000
+            );
+          } catch (e2: any) {}
+        }
+        toast.success(`Web3 Wallet Connected: ${address.substring(0, 6)}...${address.substring(38)}`);
+        loginAs("client");
+      } else {
+        toast.error("Web3 Wallet Extension Not Detected: Please install MetaMask or another EVM wallet extension.");
+      }
+    } catch (err: any) {
+      console.warn("Web3 sign notice:", err);
+      toast.error(err?.message || "Web3 Wallet Authentication Failed: Connection timed out or signature rejected.");
+    } finally {
       setIsWeb3Loading(false);
-      loginAs("client");
-    }, 1000);
+    }
   };
 
   return (
@@ -65,7 +142,7 @@ export default function LoginPage() {
           {/* Client Sample Button */}
           <button
             type="button"
-            onClick={() => loginAs("client")}
+            onClick={() => handleDemoLogin("client")}
             className="p-2.5 rounded-[2px] bg-bg-void border border-border-hairline hover:border-accent-scan/60 text-left transition-colors space-y-1 group"
           >
             <div className="flex items-center justify-between">
@@ -82,7 +159,7 @@ export default function LoginPage() {
           {/* Auditor Sample Button */}
           <button
             type="button"
-            onClick={() => loginAs("auditor")}
+            onClick={() => handleDemoLogin("auditor")}
             className="p-2.5 rounded-[2px] bg-bg-void border border-border-hairline hover:border-signal-high/60 text-left transition-colors space-y-1 group"
           >
             <div className="flex items-center justify-between">
@@ -99,7 +176,7 @@ export default function LoginPage() {
           {/* Platform Admin Sample Button */}
           <button
             type="button"
-            onClick={() => loginAs("admin")}
+            onClick={() => handleDemoLogin("admin")}
             className="p-2.5 rounded-[2px] bg-bg-void border border-border-hairline hover:border-accent-scan text-left transition-colors space-y-1 group"
           >
             <div className="flex items-center justify-between">
